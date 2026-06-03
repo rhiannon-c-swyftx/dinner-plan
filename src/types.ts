@@ -65,6 +65,8 @@ export interface RecipeResponse {
   wildcardRecipe?: Recipe;
   emptyFridgeAlert: boolean;
   suggestedStaples: string[];
+  apiQuotaError?: boolean;
+  isMockFallback?: boolean;
 }
 
 export interface StoreComparison {

@@ -333,6 +333,7 @@ app.post("/api/recipes", async (req, res) => {
          - If fewer than 5 ingredients exist in their fridge, set emptyFridgeAlert=true and output a "Start fresh" staples list of 5-6 grocery items based on what appeared most in successfully rated recipes (liked, past rating "up" ingredients).
       6. Return exactly 3 recipe cards in the main "recipes" array.
       7. Return exactly one "wildcardRecipe" for when they swipe past all three suggestions. Use an ingredient they haven't cooked with recently, or suggest a highly creative, unique option that respects their preferences.
+      8. Search the internet using the googleSearch tool to locate real, trending, highly-rated recipes using the user's ingredients. Integrate real-world context, cooking tips, or trending methods discovered via these online web searches.
 
       OUTPUT FORMAT:
       You must respond in a valid JSON format matching the following structural specification:
@@ -361,73 +362,122 @@ app.post("/api/recipes", async (req, res) => {
       }
     `;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-3.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          required: ["mode", "recipes", "emptyFridgeAlert", "suggestedStaples"],
-          properties: {
-            mode: { type: Type.STRING },
-            recipes: {
-              type: Type.ARRAY,
-              items: {
-                type: Type.OBJECT,
-                required: [
-                  "id", "title", "description", "ingredientMatch", "tasteMatch", 
-                  "combinedScore", "have", "missing", "missingEstimatedCost", 
-                  "expiringIngredientsUsed", "preferenceWarnings", "steps", "cookTimeMinutes"
-                ],
-                properties: {
-                  id: { type: Type.STRING },
-                  title: { type: Type.STRING },
-                  description: { type: Type.STRING },
-                  ingredientMatch: { type: Type.NUMBER },
-                  tasteMatch: { type: Type.NUMBER },
-                  combinedScore: { type: Type.NUMBER },
-                  have: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  missing: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  missingEstimatedCost: { type: Type.NUMBER },
-                  expiringIngredientsUsed: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  preferenceWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-                  cookTimeMinutes: { type: Type.INTEGER }
-                }
-              }
-            },
-            wildcardRecipe: {
-              type: Type.OBJECT,
-              properties: {
-                id: { type: Type.STRING },
-                title: { type: Type.STRING },
-                description: { type: Type.STRING },
-                ingredientMatch: { type: Type.NUMBER },
-                tasteMatch: { type: Type.NUMBER },
-                combinedScore: { type: Type.NUMBER },
-                have: { type: Type.ARRAY, items: { type: Type.STRING } },
-                missing: { type: Type.ARRAY, items: { type: Type.STRING } },
-                missingEstimatedCost: { type: Type.NUMBER },
-                expiringIngredientsUsed: { type: Type.ARRAY, items: { type: Type.STRING } },
-                preferenceWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
-                steps: { type: Type.ARRAY, items: { type: Type.STRING } },
-                cookTimeMinutes: { type: Type.INTEGER }
-              }
-            },
-            emptyFridgeAlert: { type: Type.BOOLEAN },
-            suggestedStaples: { type: Type.ARRAY, items: { type: Type.STRING } }
+    const recipeSchema = {
+      type: Type.OBJECT,
+      required: ["mode", "recipes", "emptyFridgeAlert", "suggestedStaples"],
+      properties: {
+        mode: { type: Type.STRING },
+        recipes: {
+          type: Type.ARRAY,
+          items: {
+            type: Type.OBJECT,
+            required: [
+              "id", "title", "description", "ingredientMatch", "tasteMatch", 
+              "combinedScore", "have", "missing", "missingEstimatedCost", 
+              "expiringIngredientsUsed", "preferenceWarnings", "steps", "cookTimeMinutes"
+            ],
+            properties: {
+              id: { type: Type.STRING },
+              title: { type: Type.STRING },
+              description: { type: Type.STRING },
+              ingredientMatch: { type: Type.NUMBER },
+              tasteMatch: { type: Type.NUMBER },
+              combinedScore: { type: Type.NUMBER },
+              have: { type: Type.ARRAY, items: { type: Type.STRING } },
+              missing: { type: Type.ARRAY, items: { type: Type.STRING } },
+              missingEstimatedCost: { type: Type.NUMBER },
+              expiringIngredientsUsed: { type: Type.ARRAY, items: { type: Type.STRING } },
+              preferenceWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
+              steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+              cookTimeMinutes: { type: Type.INTEGER }
+            }
           }
-        }
+        },
+        wildcardRecipe: {
+          type: Type.OBJECT,
+          properties: {
+            id: { type: Type.STRING },
+            title: { type: Type.STRING },
+            description: { type: Type.STRING },
+            ingredientMatch: { type: Type.NUMBER },
+            tasteMatch: { type: Type.NUMBER },
+            combinedScore: { type: Type.NUMBER },
+            have: { type: Type.ARRAY, items: { type: Type.STRING } },
+            missing: { type: Type.ARRAY, items: { type: Type.STRING } },
+            missingEstimatedCost: { type: Type.NUMBER },
+            expiringIngredientsUsed: { type: Type.ARRAY, items: { type: Type.STRING } },
+            preferenceWarnings: { type: Type.ARRAY, items: { type: Type.STRING } },
+            steps: { type: Type.ARRAY, items: { type: Type.STRING } },
+            cookTimeMinutes: { type: Type.INTEGER }
+          }
+        },
+        emptyFridgeAlert: { type: Type.BOOLEAN },
+        suggestedStaples: { type: Type.ARRAY, items: { type: Type.STRING } }
       }
-    });
+    };
 
-    const parsed = JSON.parse(response.text || "{}") as RecipeResponse;
+    let responseText = "";
+    let apiQuotaError = false;
+    let isMockFallback = false;
+
+    try {
+      console.log("Calling Gemini with internet search...");
+      const response = await ai.models.generateContent({
+        model: "gemini-3.5-flash",
+        contents: prompt,
+        config: {
+          tools: [{ googleSearch: {} }],
+          responseMimeType: "application/json",
+          responseSchema: recipeSchema
+        }
+      });
+      responseText = response.text || "{}";
+    } catch (primaryErr: any) {
+      console.warn("Primary search-grounded Gemini call failed:", primaryErr?.message || primaryErr);
+      apiQuotaError = true;
+
+      // Stage 2: Retry WITHOUT the googleSearch tool (which uses much less quota)
+      try {
+        console.log("Retrying standard Gemini generation without Google Search grounding...");
+        const responseWithoutTools = await ai.models.generateContent({
+          model: "gemini-3.5-flash",
+          contents: prompt + "\nFallback Instruction: Internet search matches are temporarily disabled, please construct high-quality, authentic culinary suggestions directly from your knowledge base of recipe databases.",
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: recipeSchema
+          }
+        });
+        responseText = responseWithoutTools.text || "{}";
+      } catch (secondaryErr: any) {
+        console.error("Secondary Gemini call also failed. Initiating procedural fallback:", secondaryErr?.message || secondaryErr);
+        isMockFallback = true;
+      }
+    }
+
+    if (isMockFallback) {
+      const fallbackData = getProceduralRecipes(state, !!useItUpActivated);
+      return res.json({
+        ...fallbackData,
+        apiQuotaError: true,
+        isMockFallback: true
+      });
+    }
+
+    const parsed = JSON.parse(responseText || "{}") as RecipeResponse;
+    if (apiQuotaError) {
+      parsed.apiQuotaError = true;
+    }
     return res.json(parsed);
+
   } catch (error) {
     console.error("Gemini recipe fetch error:", error);
     // Fall back gracefully so they never see a blank screen
-    return res.json(getProceduralRecipes(state, !!useItUpActivated));
+    const fallbackData = getProceduralRecipes(state, !!useItUpActivated);
+    return res.json({
+      ...fallbackData,
+      apiQuotaError: true,
+      isMockFallback: true
+    });
   }
 });
 

@@ -9,6 +9,7 @@ import RecipeCard from './components/RecipeCard';
 import FridgeManager from './components/FridgeManager';
 import WeeklyCheck from './components/WeeklyCheck';
 import ShoppingModal from './components/ShoppingModal';
+import { CookingLoader } from './components/CookingLoader';
 
 // Constants for initial state
 const INITIAL_STATE: AppState = {
@@ -542,12 +543,24 @@ export default function App() {
                 </div>
 
                 {recipesLoading ? (
-                  <div className="p-16 border rounded-3xl bg-white border-stone-150 text-center space-y-3.5 shadow-xs">
-                    <div className="w-9 h-9 border-4 border-orange-500 border-t-transparent rounded-full animate-spin mx-auto" />
-                    <p className="text-xs text-stone-500 font-bold">Chef's AI engine is cooking up custom suggestions...</p>
-                  </div>
+                  <CookingLoader ingredients={state.fridge.map(item => item.name)} />
                 ) : recipesResponse ? (
                   <div className="space-y-6">
+
+                    {/* API quota error fallback indicator */}
+                    {recipesResponse.apiQuotaError && (
+                      <div className="bg-amber-50/70 border border-amber-200/80 rounded-[24px] p-4 flex gap-3 items-center text-amber-900 shadow-xs">
+                        <Sparkles className="w-5 h-5 text-amber-600 animate-pulse flex-shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <h5 className="text-xs font-extrabold tracking-tight">Active Plan Resilience Active</h5>
+                          <p className="text-[10px] text-amber-750 font-semibold leading-relaxed mt-0.5">
+                            {recipesResponse.isMockFallback 
+                              ? "We've activated our local culinary engine to build your planning options while Gemini's search quota cools down." 
+                              : "Gemini built these authentic custom recipes directly using its pre-trained culinary knowledge."}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                     
                     {/* Empty Fridge State Suggestion Prompt */}
                     {recipesResponse.emptyFridgeAlert && (
