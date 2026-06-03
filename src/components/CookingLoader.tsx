@@ -7,11 +7,11 @@ interface CookingLoaderProps {
 }
 
 const SEARCH_STEPS = [
-  { id: "query", text: "Formulating culinary search queries...", icon: Search },
-  { id: "web", text: "Searching the internet for recipes...", icon: Globe },
-  { id: "blog", text: "Analyzing highly-rated culinary posts...", icon: Sparkles },
-  { id: "simmer", text: "Simmering findings and tasting virtually...", icon: Flame },
-  { id: "plate", text: "Plating three customized suggestions...", icon: Utensils },
+  { id: "query", text: "Formulating queries for taste.com.au...", icon: Search },
+  { id: "web", text: "Searching taste.com.au repository...", icon: Globe },
+  { id: "blog", text: "Analyzing taste.com.au highly-rated recipes...", icon: Sparkles },
+  { id: "simmer", text: "Simmering ingredients and seasoning virtually...", icon: Flame },
+  { id: "plate", text: "Plating taste.com.au suggestions...", icon: Utensils },
 ];
 
 export function CookingLoader({ ingredients }: CookingLoaderProps) {
@@ -101,7 +101,7 @@ export function CookingLoader({ ingredients }: CookingLoaderProps) {
       {ingredients.length > 0 && (
         <div className="bg-stone-50 rounded-2xl p-4 border border-stone-200/50 max-w-sm mx-auto space-y-2.5">
           <p className="text-[10px] text-stone-400 font-extrabold uppercase tracking-wider text-center">
-            Internet Search Parameters
+            Taste.com.au Search Parameters
           </p>
           <div className="flex flex-wrap justify-center gap-1.5">
             {displayedIngredients.map((item, idx) => (

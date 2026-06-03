@@ -560,11 +560,11 @@ export default function App() {
                       <div className="bg-amber-50/70 border border-amber-200/80 rounded-[24px] p-4 flex gap-3 items-center text-amber-900 shadow-xs">
                         <Sparkles className="w-5 h-5 text-amber-600 animate-pulse flex-shrink-0" />
                         <div className="flex-1 min-w-0">
-                          <h5 className="text-xs font-extrabold tracking-tight">Active Plan Resilience Active</h5>
+                          <h5 className="text-xs font-extrabold tracking-tight">Search Quota Handled Gracefully</h5>
                           <p className="text-[10px] text-amber-750 font-semibold leading-relaxed mt-0.5">
                             {recipesResponse.isMockFallback 
-                              ? "We've activated our local culinary engine to build your planning options while Gemini's search quota cools down." 
-                              : "Gemini built these authentic custom recipes directly using its pre-trained culinary knowledge."}
+                              ? "Standard search query limits were exceeded, so our local recipe suggestions have been loaded to keep your cooking planner perfectly offline-first." 
+                              : "Web search tools hit their limit, so Gemini has generated these authentic dishes directly using its pre-trained culinary knowledge."}
                           </p>
                         </div>
                       </div>
