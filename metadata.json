@@ -1,0 +1,6 @@
+{
+  "name": "Dinner Planner",
+  "description": "A mobile-first dinner planning app that suggests recipes based on what is in your fridge, your preferences, and shopping budget.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
