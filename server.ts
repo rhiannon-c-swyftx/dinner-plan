@@ -295,10 +295,15 @@ app.post("/api/recipes", async (req, res) => {
     return res.status(400).json({ error: "State parameter is required" });
   }
 
-  // If no Gemini AI initialized, default to state-aware procedural generator
-  if (!ai) {
-    console.log("Using procedural generator fallback for recipes.");
-    return res.json(getProceduralRecipes(state, !!useItUpActivated));
+  // If no Gemini AI initialized or user requested local fallback, use state-aware procedural generator
+  if (!ai || state.settings.bypassGemini) {
+    console.log("Using procedural generator fallback for recipes. Bypass active:", !!state.settings.bypassGemini);
+    const fallbackData = getProceduralRecipes(state, !!useItUpActivated);
+    return res.json({
+      ...fallbackData,
+      apiQuotaError: false,
+      isMockFallback: true
+    });
   }
 
   const mode = state.settings.toggleMode || "use_what_i_have";
@@ -485,20 +490,21 @@ app.post("/api/recipes", async (req, res) => {
  * Shopping run comparison endpoint
  */
 app.post("/api/shop", async (req, res) => {
-  const { missingIngredients, groceryStores, budget, currency } = req.body as {
+  const { missingIngredients, groceryStores, budget, currency, bypassGemini } = req.body as {
     missingIngredients: string[];
     groceryStores: string[];
     budget: number;
     currency: string;
+    bypassGemini?: boolean;
   };
 
   if (!missingIngredients) {
     return res.status(400).json({ error: "missingIngredients parameter is required" });
   }
 
-  // Fallback if no Gemini is configured
-  if (!ai) {
-    console.log("Using procedural generator fallback for shopping run.");
+  // Fallback if no Gemini is configured or bypass requested
+  if (!ai || bypassGemini) {
+    console.log("Using procedural generator fallback for shopping run. Bypass active:", !!bypassGemini);
     return res.json(getProceduralShopping(missingIngredients, budget, currency || "AUD", groceryStores || ["Woolworths", "Coles", "Aldi"]));
   }
 

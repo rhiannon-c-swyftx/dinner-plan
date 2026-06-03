@@ -33,6 +33,7 @@ export interface UserSettings {
   currency: string;
   groceryStores: string[];
   toggleMode: 'use_what_i_have' | 'go_to_shops';
+  bypassGemini?: boolean;
 }
 
 export interface AppState {

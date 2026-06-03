@@ -29,7 +29,8 @@ const INITIAL_STATE: AppState = {
     budget: 30,
     currency: "AUD",
     groceryStores: ["Woolworths", "Coles", "Aldi"],
-    toggleMode: "use_what_i_have"
+    toggleMode: "use_what_i_have",
+    bypassGemini: false
   },
   recentIngredients: ["broccoli"]
 };
@@ -62,6 +63,7 @@ export default function App() {
   const [settingBudget, setSettingBudget] = useState(state.settings.budget);
   const [settingCurrency, setSettingCurrency] = useState(state.settings.currency);
   const [settingStores, setSettingStores] = useState<string[]>(state.settings.groceryStores);
+  const [settingBypassGemini, setSettingBypassGemini] = useState(state.settings.bypassGemini || false);
 
   // Sync state to local storage
   useEffect(() => {
@@ -251,15 +253,21 @@ export default function App() {
   // Apply settings
   const handleSaveSettings = (e: React.FormEvent) => {
     e.preventDefault();
-    setState(prev => ({
-      ...prev,
-      settings: {
-        ...prev.settings,
-        budget: settingBudget,
-        currency: settingCurrency,
-        groceryStores: settingStores
-      }
-    }));
+    setState(prev => {
+      const updated = {
+        ...prev,
+        settings: {
+          ...prev.settings,
+          budget: settingBudget,
+          currency: settingCurrency,
+          groceryStores: settingStores,
+          bypassGemini: settingBypassGemini
+        }
+      };
+      // Fetch fresh recipe suggestions based on new settings
+      fetchRecipes(updated);
+      return updated;
+    });
     setActiveTab('tonight');
   };
 
@@ -890,6 +898,24 @@ export default function App() {
                         <span>{store}</span>
                       </label>
                     ))}
+                  </div>
+
+                  {/* Local Bypass Toggle */}
+                  <div className="bg-amber-50/40 p-4 border border-amber-200/50 rounded-2xl">
+                    <label className="flex items-center justify-between gap-3 cursor-pointer select-none">
+                      <div className="space-y-0.5">
+                        <span className="text-xs uppercase text-amber-950 font-black tracking-wider block">Local Engine Fallback</span>
+                        <span className="text-[10px] text-amber-700/85 font-semibold block leading-relaxed">
+                          Bypass cloud AI calls to ignore search quota limits. Perfect for lightning-fast testing!
+                        </span>
+                      </div>
+                      <input
+                        type="checkbox"
+                        checked={settingBypassGemini}
+                        onChange={(e) => setSettingBypassGemini(e.target.checked)}
+                        className="accent-orange-500 w-5 h-5 rounded-md flex-shrink-0 cursor-pointer"
+                      />
+                    </label>
                   </div>
 
                   <div className="flex gap-2 pt-4 border-t border-stone-100">

@@ -25,7 +25,8 @@ export default function ShoppingModal({ missingIngredients, settings, onClose }:
           missingIngredients,
           groceryStores: settings.groceryStores,
           budget: currentBudget,
-          currency: settings.currency || 'AUD'
+          currency: settings.currency || 'AUD',
+          bypassGemini: settings.bypassGemini
         })
       });
       if (!response.ok) {
